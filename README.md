@@ -7,12 +7,12 @@ Author(s): *Jason Ford*
 Stage: 0
 
 ## About
-Inspired by an aspect of the [**Composites**](https://github.com/tc39/proposal-composites) proposal, which <u>requires an algorithm for determining if two data structures are identical</u>. A part of this proposal provides a solution to the same problem space and so thus competes with Composites.
+Inspired by an aspect of the [**Composites**](https://github.com/tc39/proposal-composites) proposal, which <ins>requires an algorithm for determining if two data structures are identical</ins>. A part of this proposal provides a solution to the same problem space and so thus competes with Composites.
 
 ## Proposal
 An algorithm that can say if two objects have the same structure could be considered a kind of equality. To provide a standard for this new algorithm and to help developers avoid common issues with `==` vs `===`, I am proposing the addition of a top-level `Equality` API that names these various algorithms and provides powerful utility methods around equality.
 
-<u>This proposal takes the form of a library, not a language enhancement</u>; a proper implementation would likely leverage engine internals to be more optimized.
+<ins>This proposal takes the form of a library, not a language enhancement</ins>; a proper implementation would likely leverage engine internals to be more optimized.
 
 ## New Equality: "Uniform"
 Some other languages allow you to compare objects and know if they are effectively identical, regardless of references. This is not trivial in Javascript; using `JSON.stringify()` to compare serialized versions of those objects is imperfect and costly.

@@ -1082,10 +1082,10 @@ body .markdown-body
 Author(s): <em>Jason Ford</em><br />
 Stage: 0</p>
 <h2 id="about">About<a class="headerlink" href="#about" title="Permanent link"></a></h2>
-<p>Inspired by an aspect of the <a href="https://github.com/tc39/proposal-composites"><strong>Composites</strong></a> proposal, which <u>requires an algorithm for determining if two data structures are identical</u>. A part of this proposal provides a solution to the same problem space and so thus competes with Composites.</p>
+<p>Inspired by an aspect of the <a href="https://github.com/tc39/proposal-composites"><strong>Composites</strong></a> proposal, which <ins>requires an algorithm for determining if two data structures are identical</ins>. A part of this proposal provides a solution to the same problem space and so thus competes with Composites.</p>
 <h2 id="proposal">Proposal<a class="headerlink" href="#proposal" title="Permanent link"></a></h2>
 <p>An algorithm that can say if two objects have the same structure could be considered a kind of equality. To provide a standard for this new algorithm and to help developers avoid common issues with <code>==</code> vs <code>===</code>, I am proposing the addition of a top-level <code>Equality</code> API that names these various algorithms and provides powerful utility methods around equality.</p>
-<p><u>This proposal takes the form of a library, not a language enhancement</u>; a proper implementation would likely leverage engine internals to be more optimized.</p>
+<p><ins>This proposal takes the form of a library, not a language enhancement</ins>; a proper implementation would likely leverage engine internals to be more optimized.</p>
 <h2 id="new-equality-uniform">New Equality: &ldquo;Uniform&rdquo;<a class="headerlink" href="#new-equality-uniform" title="Permanent link"></a></h2>
 <p>Some other languages allow you to compare objects and know if they are effectively identical, regardless of references. This is not trivial in Javascript; using <code>JSON.stringify()</code> to compare serialized versions of those objects is imperfect and costly.</p>
 <p>This proposal includes a recursive algorithm for doing a value/structure comparison between objects, with some nuances and caveats:</p>
