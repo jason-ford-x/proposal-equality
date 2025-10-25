@@ -1082,28 +1082,31 @@ body .markdown-body
 Author(s): <em>Jason Ford</em><br />
 Stage: 0</p>
 <h2 id="about">About<a class="headerlink" href="#about" title="Permanent link"></a></h2>
-<p>Inspired by an aspect of the <a href="https://github.com/tc39/proposal-composites"><strong>composites</strong></a> proposal, which <u>requires an algorithm for determining if two data structures are identical</u>. A part of this proposal provides a solution to the same problem space and so thus competes with <strong>composites</strong>.</p>
-<p>Such an algorithm could be considered another kind of equality. To clarify this new algorithm and help developers avoid common issues with <code>==</code> vs <code>===</code>, I am proposing a top-level <code>Equality</code> API that names these various algorithms and provides powerful utility methods around equality.</p>
+<p>Inspired by an aspect of the <a href="https://github.com/tc39/proposal-composites"><strong>Composites</strong></a> proposal, which <u>requires an algorithm for determining if two data structures are identical</u>. A part of this proposal provides a solution to the same problem space and so thus competes with Composites.</p>
+<h2 id="proposal">Proposal<a class="headerlink" href="#proposal" title="Permanent link"></a></h2>
+<p>An algorithm that can say if two objects have the same structure could be considered a kind of equality. To provide a standard for this new algorithm and to help developers avoid common issues with <code>==</code> vs <code>===</code>, I am proposing the addition of a top-level <code>Equality</code> API that names these various algorithms and provides powerful utility methods around equality.</p>
+<p><u>This proposal takes the form of a library, not a language enhancement</u>; a proper implementation would likely leverage engine internals to be more optimized.</p>
 <h2 id="new-equality-uniform">New Equality: &ldquo;Uniform&rdquo;<a class="headerlink" href="#new-equality-uniform" title="Permanent link"></a></h2>
 <p>Some other languages allow you to compare objects and know if they are effectively identical, regardless of references. This is not trivial in Javascript; using <code>JSON.stringify()</code> to compare serialized versions of those objects is imperfect and costly.</p>
-<p>This proposal includes an algorithm for doing a value/structure comparison between objects, with some nuances and caveats:</p>
+<p>This proposal includes a recursive algorithm for doing a value/structure comparison between objects, with some nuances and caveats:</p>
 <ul>
 <li><code>Weak*</code> are skipped entirely — based on their nature, this seems acceptable</li>
 <li><code>Symbols</code> are coerced to <code>String</code></li>
 <li>The ordering within <code>Object</code> <strong>does not</strong> matter</li>
 <li>The ordering within <code>Map</code>/<code>Set</code> <strong>does</strong> matter</li>
-<li>Circular references are skipped when encountered</li>
+<li>Circular references are skipped when encountered in <em>either</em> item, it is <strong>not</strong> checked if they go to the same structure</li>
 <li>The algorithm is depth-first and returns as soon as a <em>difference</em> is found. It has various pre-checks to avoid unnecessary work, like strict-equality checking, type-checking, etc.</li>
-<li>Considered <em>less strict</em> than <code>==</code> since it returns <code>true</code> in more scenarios than <code>==</code> would.</li>
+<li>Considered <em>less strict</em> than <code>==</code> since it returns <code>true</code> in more scenarios than <code>==</code> would</li>
 </ul>
+<p><em>The algorithm will be available shortly — note that it is written for clarity not performance</em>.</p>
 <h2 id="naming">Naming<a class="headerlink" href="#naming" title="Permanent link"></a></h2>
 <p>I&rsquo;ve chosen &lsquo;feel&rsquo; based names, as &lsquo;jargon&rsquo; names would likely impeded learning/understanding, and &lsquo;what&rsquo; names that try to convey what is included/excluded are likely to be overloaded. The names chosen are:</p>
 <ul>
 <li><code>loose</code> for <code>==</code>  </li>
 <li><code>strict</code> for <code>===</code>  </li>
-<li><code>uniform</code> for <code>~=</code> (new; symbol is unnecessary). Uniform in the sense of &lsquo;one-form&rsquo; and clothing — intentionally identical in value (colors) and structure (pattern) but not the same object.</li>
+<li><code>uniform</code> for <code>~=</code> (<strong>new</strong> - symbol is unnecessary). Uniform as in clothing — uniforms are by design interchangable yet not the same object.</li>
 </ul>
-<h2 id="methods">Methods<a class="headerlink" href="#methods" title="Permanent link"></a></h2>
+<h2 id="api-methods">API Methods<a class="headerlink" href="#api-methods" title="Permanent link"></a></h2>
 <p><code>Equality</code> is a new top-level object. All methods below return a <code>Boolean</code> except for those that indicate otherwise.</p>
 <h3 id="equalityloose-a-b">Equality.loose( a, b )<a class="headerlink" href="#equalityloose-a-b" title="Permanent link"></a></h3>
 <p>Just a <code>return a == b</code> statement;
@@ -1164,9 +1167,10 @@ Stage: 0</p>
 </pre></div></p>
 <h2 id="equalityhas">Equality.has*<a class="headerlink" href="#equalityhas" title="Permanent link"></a></h2>
 <p>These methods let you test the key/value/entry of an <code>Object</code>, <code>Array</code>, <code>Map</code>, or <code>Set</code> using a specific equality algorithm, defaulting to &lsquo;strict&rsquo;. They all return a <code>Boolean</code> as soon as possible.</p>
+<p>For the &lsquo;strict&rsquo; case, these methods are effectively aliases for methods like <code>Array.includes</code>, <code>Set.has</code>, but more convenient when iterating over a mixed collection as you wouldn&rsquo;t have to type-check to know which method to use.</p>
 <p><strong>Note:</strong> I do not think these methods should be added to the respective data types — having to provide an <code>Equality</code> method already forces you to dip into this API, might as well use it wholly.</p>
 <h3 id="equalityhaskey-target-key-methodstrict">Equality.hasKey( target, key, method=&rsquo;strict&rsquo; )<a class="headerlink" href="#equalityhaskey-target-key-methodstrict" title="Permanent link"></a></h3>
-<p>Returns if the target has the provided key, based on the specified equality algorithm. Since keys for <code>Map</code> can be anything, <code>uniform</code> provides a convenient way to match on identical-looking objects at the key level.</p>
+<p>Returns whether the target has the provided key, based on the specified equality algorithm. Since keys for <code>Map</code> can be anything, <code>uniform</code> provides a convenient way to match on identical-looking objects at the key level.</p>
 <p>For <code>Set</code>/<code>Array</code>, keys are the indices.
 <div class="highlight"><pre><span class="c1">// Map</span>
 <span class="kd">let</span> <span class="nx">myMap</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Map</span><span class="p">([</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="p">[[</span><span class="mi">2</span><span class="p">],</span><span class="mi">3</span><span class="p">]</span> <span class="p">]);</span>
@@ -1187,7 +1191,7 @@ Stage: 0</p>
 <span class="nx">Equality</span><span class="p">.</span><span class="nx">hasKey</span><span class="p">(</span> <span class="nx">myArr</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;loose&#39;</span> <span class="p">);</span> <span class="c1">// true; matches exp &quot;1 in myArr&quot;</span>
 </pre></div></p>
 <h3 id="equalityhasvalue-target-value-methodstrict">Equality.hasValue( target, value, method=&rsquo;strict&rsquo; )<a class="headerlink" href="#equalityhasvalue-target-value-methodstrict" title="Permanent link"></a></h3>
-<p>Returns if the target has the provided value, based on the specified equality algorithm. Since values for <code>Object</code>/<code>Map</code>/<code>Array</code>/<code>Set</code> can be anything, <code>uniform</code> provides a convenient way to match on identical-looking objects on the value level.
+<p>Returns whether the target has the provided value, based on the specified equality algorithm. Since values for <code>Object</code>/<code>Map</code>/<code>Array</code>/<code>Set</code> can be anything, <code>uniform</code> provides a convenient way to match on identical-looking objects on the value level.
 <div class="highlight"><pre><span class="c1">// Map</span>
 <span class="kd">let</span> <span class="nx">myMap</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Map</span><span class="p">([</span> <span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">,[</span><span class="mi">1</span><span class="p">]]</span> <span class="p">]);</span>
 <span class="nx">Equality</span><span class="p">.</span><span class="nx">hasValue</span><span class="p">(</span> <span class="nx">myMap</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">);</span> <span class="c1">// false</span>
@@ -1206,7 +1210,7 @@ Stage: 0</p>
 <span class="nx">Equality</span><span class="p">.</span><span class="nx">hasValue</span><span class="p">(</span> <span class="nx">myArr</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;uniform&#39;</span> <span class="p">);</span> <span class="c1">// true</span>
 </pre></div></p>
 <h3 id="equalityhasentry-target-key-value-methodstrict-method_valuesame-as-method">Equality.hasEntry( target, key, value, method=&rsquo;strict&rsquo;, method_value=&lt;same as method> )<a class="headerlink" href="#equalityhasentry-target-key-value-methodstrict-method_valuesame-as-method" title="Permanent link"></a></h3>
-<p>Returns if the target has the provided key/value pair/entry, each based on the specified equality algorithm. You can provide a second equality algorithm to be used on <code>value</code> instead of using the same from <code>key</code>. Since a <code>Map</code>&lsquo;s <code>key</code> and <code>value</code> can be nearly anything, <code>uniform</code> provides a convenient way to match on identical-looking objects on the key and value level.</p>
+<p>Returns whether the target has the provided key/value pair/entry, each based on the specified equality algorithm. You can provide a second equality algorithm to be used on <code>value</code> instead of using the same from <code>key</code>. Since a <code>Map</code>&lsquo;s <code>key</code> and <code>value</code> can be nearly anything, <code>uniform</code> provides a convenient way to match on identical-looking objects on the key and value level.</p>
 <p>For <code>Set</code>/<code>Array</code>, keys are the indices.
 <div class="highlight"><pre><span class="c1">// Map</span>
 <span class="kd">let</span> <span class="nx">myMap</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Map</span><span class="p">([</span> <span class="p">[[</span><span class="s1">&#39;a&#39;</span><span class="p">],[</span><span class="mi">1</span><span class="p">]]</span> <span class="p">]);</span>
@@ -1257,7 +1261,7 @@ Stage: 0</p>
 <li>Some style guides may prefer the more explicit <code>Equality</code> methods as a defense against typos with <code>==</code>/<code>===</code> — it would presumably be more difficult to mix up <code>loose</code> and <code>strict</code> as words.</li>
 <li>Centralizing equality algorithms under an API can help ensure each new algorithm conforms to a standard (name, supported types, etc). It could also reduce pressure to give each new algorithm an equality symbol. This proposal does not contain any, but type/data-structure specific algorithms could be provided.</li>
 <li><code>Equality.custom()</code> allows for mixing and matching the algorithms conditionally and to write your own algorithm without writing the overhead logic, similar to the conveniences of <code>Array.sort</code>.</li>
-<li>The <a href="https://github.com/tc39/proposal-composites">composites</a> proposal addresses the common use-case of wanting to check an object&rsquo;s membership in a collection, not by reference but when the object is semi/identical to one in the collection. For example, knowing that the structure <code>[0,1]</code> is in <code>[[0,1],[1,2],[2,3]]</code> regardless of references. This proposal solutions that common case out of the box, and <code>Equality.custom</code> supports variation:
+<li>The <a href="https://github.com/tc39/proposal-composites">composites</a> proposal addresses the common use-case of wanting to check an object&rsquo;s membership in a collection, not by reference but when the object is semi/identical to one in the collection. For example, knowing that the structure <code>[0,1]</code> is in <code>[[0,1],[1,2],[2,3]]</code> regardless of references. This proposal solutions that common case out of the box, and <code>Equality.custom</code> allows users to easily write a variation:
 <div class="highlight"><pre><span class="nx">Equality</span><span class="p">.</span><span class="nx">hasValue</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],[</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;uniform&#39;</span><span class="p">)</span> <span class="c1">// true</span>
 </pre></div></li>
 </ul></article></body></html>

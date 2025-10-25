@@ -7,31 +7,36 @@ Author(s): *Jason Ford*
 Stage: 0
 
 ## About
-Inspired by an aspect of the [**composites**](https://github.com/tc39/proposal-composites) proposal, which <u>requires an algorithm for determining if two data structures are identical</u>. A part of this proposal provides a solution to the same problem space and so thus competes with **composites**.
+Inspired by an aspect of the [**Composites**](https://github.com/tc39/proposal-composites) proposal, which <u>requires an algorithm for determining if two data structures are identical</u>. A part of this proposal provides a solution to the same problem space and so thus competes with Composites.
 
-Such an algorithm could be considered another kind of equality. To clarify this new algorithm and help developers avoid common issues with `==` vs `===`, I am proposing a top-level `Equality` API that names these various algorithms and provides powerful utility methods around equality.
+## Proposal
+An algorithm that can say if two objects have the same structure could be considered a kind of equality. To provide a standard for this new algorithm and to help developers avoid common issues with `==` vs `===`, I am proposing the addition of a top-level `Equality` API that names these various algorithms and provides powerful utility methods around equality.
+
+<u>This proposal takes the form of a library, not a language enhancement</u>; a proper implementation would likely leverage engine internals to be more optimized.
 
 ## New Equality: "Uniform"
 Some other languages allow you to compare objects and know if they are effectively identical, regardless of references. This is not trivial in Javascript; using `JSON.stringify()` to compare serialized versions of those objects is imperfect and costly.
 
-This proposal includes an algorithm for doing a value/structure comparison between objects, with some nuances and caveats:
+This proposal includes a recursive algorithm for doing a value/structure comparison between objects, with some nuances and caveats:
 
 - `Weak*` are skipped entirely — based on their nature, this seems acceptable
 - `Symbols` are coerced to `String`
 - The ordering within `Object` **does not** matter
 - The ordering within `Map`/`Set` **does** matter
-- Circular references are skipped when encountered
+- Circular references are skipped when encountered in *either* item, it is **not** checked if they go to the same structure
 - The algorithm is depth-first and returns as soon as a *difference* is found. It has various pre-checks to avoid unnecessary work, like strict-equality checking, type-checking, etc.
-- Considered *less strict* than `==` since it returns `true` in more scenarios than `==` would.
+- Considered *less strict* than `==` since it returns `true` in more scenarios than `==` would
+
+*The algorithm will be available shortly — note that it is written for clarity not performance*.
 
 ## Naming
 I've chosen 'feel' based names, as 'jargon' names would likely impeded learning/understanding, and 'what' names that try to convey what is included/excluded are likely to be overloaded. The names chosen are:
 
 - `loose` for `==`  
 - `strict` for `===`  
-- `uniform` for `~=` (new; symbol is unnecessary). Uniform in the sense of 'one-form' and clothing — intentionally identical in value (colors) and structure (pattern) but not the same object.
+- `uniform` for `~=` (**new** - symbol is unnecessary). Uniform as in clothing — uniforms are by design interchangable yet not the same object.
 
-## Methods
+## API Methods
 `Equality` is a new top-level object. All methods below return a `Boolean` except for those that indicate otherwise.
 
 ### Equality.loose( a, b )
@@ -114,10 +119,12 @@ Equality.any( [a,b,c], 'strict' ) // false
 ## Equality.has*
 These methods let you test the key/value/entry of an `Object`, `Array`, `Map`, or `Set` using a specific equality algorithm, defaulting to 'strict'. They all return a `Boolean` as soon as possible.
 
+For the 'strict' case, these methods are effectively aliases for methods like `Array.includes`, `Set.has`, but more convenient when iterating over a mixed collection as you wouldn't have to type-check to know which method to use.
+
 **Note:** I do not think these methods should be added to the respective data types — having to provide an `Equality` method already forces you to dip into this API, might as well use it wholly.
 
 ### Equality.hasKey( target, key, method='strict' )
-Returns if the target has the provided key, based on the specified equality algorithm. Since keys for `Map` can be anything, `uniform` provides a convenient way to match on identical-looking objects at the key level.
+Returns whether the target has the provided key, based on the specified equality algorithm. Since keys for `Map` can be anything, `uniform` provides a convenient way to match on identical-looking objects at the key level.
 
 For `Set`/`Array`, keys are the indices.
 ```js
@@ -141,7 +148,7 @@ Equality.hasKey( myArr, 1, 'loose' ); // true; matches exp "1 in myArr"
 ```
 
 ### Equality.hasValue( target, value, method='strict' )
-Returns if the target has the provided value, based on the specified equality algorithm. Since values for `Object`/`Map`/`Array`/`Set` can be anything, `uniform` provides a convenient way to match on identical-looking objects on the value level.
+Returns whether the target has the provided value, based on the specified equality algorithm. Since values for `Object`/`Map`/`Array`/`Set` can be anything, `uniform` provides a convenient way to match on identical-looking objects on the value level.
 ```js
 // Map
 let myMap = new Map([ ['a',[1]] ]);
@@ -162,7 +169,7 @@ Equality.hasValue( myArr, [1], 'uniform' ); // true
 ```
 
 ### Equality.hasEntry( target, key, value, method='strict', method_value=<same as method\> )
-Returns if the target has the provided key/value pair/entry, each based on the specified equality algorithm. You can provide a second equality algorithm to be used on `value` instead of using the same from `key`. Since a `Map`'s `key` and `value` can be nearly anything, `uniform` provides a convenient way to match on identical-looking objects on the key and value level.
+Returns whether the target has the provided key/value pair/entry, each based on the specified equality algorithm. You can provide a second equality algorithm to be used on `value` instead of using the same from `key`. Since a `Map`'s `key` and `value` can be nearly anything, `uniform` provides a convenient way to match on identical-looking objects on the key and value level.
 
 For `Set`/`Array`, keys are the indices.
 ```js
@@ -225,7 +232,7 @@ let found 	= [ [0],[1],[2],[3] ].find((item)=>{
 - Some style guides may prefer the more explicit `Equality` methods as a defense against typos with `==`/`===` — it would presumably be more difficult to mix up `loose` and `strict` as words.
 - Centralizing equality algorithms under an API can help ensure each new algorithm conforms to a standard (name, supported types, etc). It could also reduce pressure to give each new algorithm an equality symbol. This proposal does not contain any, but type/data-structure specific algorithms could be provided.
 - `Equality.custom()` allows for mixing and matching the algorithms conditionally and to write your own algorithm without writing the overhead logic, similar to the conveniences of `Array.sort`.
-- The [composites](https://github.com/tc39/proposal-composites) proposal addresses the common use-case of wanting to check an object's membership in a collection, not by reference but when the object is semi/identical to one in the collection. For example, knowing that the structure `[0,1]` is in `[[0,1],[1,2],[2,3]]` regardless of references. This proposal solutions that common case out of the box, and `Equality.custom` supports variation:
+- The [composites](https://github.com/tc39/proposal-composites) proposal addresses the common use-case of wanting to check an object's membership in a collection, not by reference but when the object is semi/identical to one in the collection. For example, knowing that the structure `[0,1]` is in `[[0,1],[1,2],[2,3]]` regardless of references. This proposal solutions that common case out of the box, and `Equality.custom` allows users to easily write a variation:
 ```js
 Equality.hasValue([[0,1],[1,2],[2,3]], [0,1], 'uniform') // true
 ```
